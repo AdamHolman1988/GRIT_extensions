@@ -71,13 +71,13 @@
         const headings = document.querySelectorAll('h2[data-component-selector="jira-issue-field-heading-multiline-field-heading-title"]');
         headings.forEach(h2 => {
             if (h2.textContent.trim() === "Popis pro zákazníka") {
-                // Najdeme hlavní obalový div pro toto pole (nejvyšší z tvého HTML fragmentu)
+                // Najde hlavní div pro toto pole
                 const mainWrapper = h2.closest('div._16jlkb7n, div'); 
-                // Bezpečnější je vzít společného rodiče, zkusíme najít kontejner, co drží jak nadpis, tak hodnotu
+                // Najde kontejner, co drží jak nadpis, tak hodnotu
                 const fieldWrapper = h2.closest('div._1bsb1osq') || h2.parentElement;
 
                 if (fieldWrapper) {
-                    // Najdeme v tomto bloku element, kde je schovaná hodnota (v tvém případě "None")
+                    // Najde v tomto bloku element, kde je schovaná hodnota "None"
                     const valueSpan = fieldWrapper.querySelector('span._19pkidpf, [role="presentation"] span');
                     const text = valueSpan ? (valueSpan.innerText || "") : fieldWrapper.innerText || "";
                     
