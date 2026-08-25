@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Dynamics Contact Form Asistent
 // @namespace    grit
-// @version      1.2
+// @version      1.06
 // @description  Ctrl+V => automatické vyplnění kontaktu
 // @author       HLM + GPT 5.6
 // @match        https://grit.crm4.dynamics.com/*
@@ -339,38 +339,86 @@
         }
     }
 
-    function createPasteButton() {
+    function findOwnButton() {
+        for (const doc of getAllDocuments()) {
+            const el = doc.getElementById('grit-contact-paste-btn');
 
-        if (!document.body) {
-            return;
+            if (el) {
+                return el;
+            }
         }
 
-        if (document.getElementById('grit-contact-paste-btn')) {
-            return;
+        return null;
+    }
+
+    function findFieldRow(inputEl) {
+        let el = inputEl;
+
+        for (let i = 0; i < 6 && el; i++) {
+            if (el.dataset && el.dataset.id && el.dataset.id.includes('FieldSectionItemContainer')) {
+                return el;
+            }
+
+            el = el.parentElement;
         }
 
-        const btn = document.createElement('button');
+        el = inputEl;
 
-        btn.id = 'grit-contact-paste-btn';
-        btn.innerHTML = '📋 Vložit kontakt';
+        for (let i = 0; i < 3 && el.parentElement; i++) {
+            el = el.parentElement;
+        }
 
+        return el;
+    }
+
+    function styleDocked(btn) {
         Object.assign(btn.style, {
-            position: 'fixed',
-            bottom: '20px',
-            left: '20px',
+            display: 'block',
+            width: '100%',
+            marginTop: '8px',
+            boxSizing: 'border-box',
             padding: '10px 14px',
             background: '#0078d4',
             color: '#fff',
             border: 'none',
             borderRadius: '6px',
             cursor: 'pointer',
-            fontSize: '14px',
-            boxShadow: '0 2px 8px rgba(0,0,0,.3)'
+            fontSize: '14px'
         });
+    }
 
-        btn.style.setProperty('z-index', '2147483647', 'important');
+    function createPasteButton() {
 
-        console.log('grit-contact-paste-btn: vytvořeno');
+        // Pole Kraj existuje jen v panelu "Vytvořit: Kontakt" -
+        // tlačítko se tak zobrazí jen tam, jinde na stránce zmizí.
+        const krajInput = findField(CRM_FIELDS.region);
+
+        let btn = findOwnButton();
+
+        if (!krajInput) {
+            if (btn) {
+                btn.remove();
+            }
+
+            return;
+        }
+
+        const anchor = findFieldRow(krajInput);
+
+        if (btn) {
+            if (btn.previousElementSibling !== anchor) {
+                anchor.insertAdjacentElement('afterend', btn);
+            }
+
+            return;
+        }
+
+        btn = document.createElement('button');
+
+        btn.id = 'grit-contact-paste-btn';
+        btn.innerHTML = '📋 Vložit kontakt';
+
+        styleDocked(btn);
 
         btn.addEventListener('click', async () => {
 
@@ -396,7 +444,9 @@
             }
         });
 
-        document.body.appendChild(btn);
+        console.log('grit-contact-paste-btn: vytvořeno');
+
+        anchor.insertAdjacentElement('afterend', btn);
     }
 
     createPasteButton();
