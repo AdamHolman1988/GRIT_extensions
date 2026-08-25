@@ -416,7 +416,7 @@
         btn = document.createElement('button');
 
         btn.id = 'grit-contact-paste-btn';
-        btn.innerHTML = '📋 Vložit kontakt';
+        btn.innerHTML = '🤖 Vložit kontakt';
 
         styleDocked(btn);
 
