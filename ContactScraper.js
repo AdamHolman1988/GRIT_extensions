@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Dynamics Contact Form Asistent
 // @namespace    grit
-// @version      1.08
-// @description  Ctrl+V => automatické vyplnění kontaktu
+// @version      1.09
+// @description  Tlačítko "Vložit kontakt" => automatické vyplnění kontaktu ze schránky
 // @author       HLM + GPT 5.6
 // @match        https://grit.crm4.dynamics.com/*
 // @grant        none
@@ -295,50 +295,6 @@
         );
     }
 
-    async function handlePaste(e) {
-
-        const html =
-            e.clipboardData.getData('text/html');
-
-        const text =
-            e.clipboardData.getData('text/plain');
-
-        if (!html && !text)
-            return;
-
-        console.log("CRM Autofill paste detected");
-
-        e.preventDefault();
-
-        const source = html || text;
-
-        const temp = document.createElement('div');
-        temp.innerHTML = source;
-
-        const plainText =
-            temp.innerText || text || source;
-
-        const parsed =
-            parseContact(plainText);
-
-        console.log(parsed);
-
-        fillForm(parsed);
-    }
-
-    const instrumentedDocs = new WeakSet();
-
-    function attachPasteListeners() {
-        for (const doc of getAllDocuments()) {
-            if (instrumentedDocs.has(doc)) {
-                continue;
-            }
-
-            instrumentedDocs.add(doc);
-            doc.addEventListener('paste', handlePaste, true);
-        }
-    }
-
     function findOwnButton() {
         for (const doc of getAllDocuments()) {
             const el = doc.getElementById('grit-contact-paste-btn');
@@ -451,11 +407,7 @@
     }
 
     createPasteButton();
-    attachPasteListeners();
 
-    setInterval(() => {
-        createPasteButton();
-        attachPasteListeners();
-    }, 1000);
+    setInterval(createPasteButton, 1000);
 
 })();
