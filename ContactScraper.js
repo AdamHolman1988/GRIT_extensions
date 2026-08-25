@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Dynamics Contact Form Asistent
 // @namespace    grit
-// @version      1.0
+// @version      1.2
 // @description  Ctrl+V => automatické vyplnění kontaktu
 // @author       HLM + GPT 5.6
 // @match        https://grit.crm4.dynamics.com/*
@@ -12,11 +12,14 @@
     'use strict';
 
     console.log('TAMPERMONKEY OK');
-    alert('TAMPERMONKEY OK');
 })();
 
 (function () {
     'use strict';
+
+    if (window.top !== window.self) {
+        return;
+    }
 
     const CRM_FIELDS = {
         firstName: 'firstname.fieldControl-text-box-text',
@@ -37,10 +40,50 @@
         region: 'grit_kraj.fieldControl-LookupResultsDropdown_grit_kraj_textInputBox_with_filter_new'
     };
 
+    function getAllDocuments() {
+        const docs = [document];
+
+        for (let i = 0; i < docs.length; i++) {
+            let frames;
+
+            try {
+                frames = docs[i].querySelectorAll('iframe');
+            } catch (e) {
+                continue;
+            }
+
+            frames.forEach(frame => {
+                try {
+                    const frameDoc = frame.contentDocument;
+
+                    if (frameDoc && !docs.includes(frameDoc)) {
+                        docs.push(frameDoc);
+                    }
+                } catch (e) {
+                    // cross-origin iframe, nepřístupné - přeskočit
+                }
+            });
+        }
+
+        return docs;
+    }
+
+    function findField(dataId) {
+        for (const doc of getAllDocuments()) {
+            const el = doc.querySelector(`[data-id="${dataId}"]`);
+
+            if (el) {
+                return el;
+            }
+        }
+
+        return null;
+    }
+
     function setField(dataId, value) {
         if (!value) return;
 
-        const el = document.querySelector(`[data-id="${dataId}"]`);
+        const el = findField(dataId);
 
         if (!el) {
             console.warn("Pole nenalezeno:", dataId);
@@ -252,7 +295,7 @@
         );
     }
 
-    document.addEventListener('paste', async (e) => {
+    async function handlePaste(e) {
 
         const html =
             e.clipboardData.getData('text/html');
@@ -281,9 +324,26 @@
         console.log(parsed);
 
         fillForm(parsed);
-    }, true);
+    }
+
+    const instrumentedDocs = new WeakSet();
+
+    function attachPasteListeners() {
+        for (const doc of getAllDocuments()) {
+            if (instrumentedDocs.has(doc)) {
+                continue;
+            }
+
+            instrumentedDocs.add(doc);
+            doc.addEventListener('paste', handlePaste, true);
+        }
+    }
 
     function createPasteButton() {
+
+        if (!document.body) {
+            return;
+        }
 
         if (document.getElementById('grit-contact-paste-btn')) {
             return;
@@ -296,9 +356,8 @@
 
         Object.assign(btn.style, {
             position: 'fixed',
-            top: '120px',
-            right: '20px',
-            zIndex: '999999',
+            bottom: '20px',
+            left: '20px',
             padding: '10px 14px',
             background: '#0078d4',
             color: '#fff',
@@ -308,6 +367,10 @@
             fontSize: '14px',
             boxShadow: '0 2px 8px rgba(0,0,0,.3)'
         });
+
+        btn.style.setProperty('z-index', '2147483647', 'important');
+
+        console.log('grit-contact-paste-btn: vytvořeno');
 
         btn.addEventListener('click', async () => {
 
@@ -337,7 +400,11 @@
     }
 
     createPasteButton();
+    attachPasteListeners();
 
-    setInterval(createPasteButton, 1000);
+    setInterval(() => {
+        createPasteButton();
+        attachPasteListeners();
+    }, 1000);
 
 })();
