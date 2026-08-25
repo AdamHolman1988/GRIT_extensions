@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Dynamics Contact Form Asistent
 // @namespace    grit
-// @version      1.06
+// @version      1.08
 // @description  Ctrl+V => automatické vyplnění kontaktu
 // @author       HLM + GPT 5.6
 // @match        https://grit.crm4.dynamics.com/*
@@ -351,31 +351,66 @@
         return null;
     }
 
-    function findFieldRow(inputEl) {
-        let el = inputEl;
+    function findScanSection() {
+        for (const doc of getAllDocuments()) {
+            const el = doc.querySelector('[data-id="businesscard"]');
 
-        for (let i = 0; i < 6 && el; i++) {
-            if (el.dataset && el.dataset.id && el.dataset.id.includes('FieldSectionItemContainer')) {
+            if (el) {
                 return el;
             }
-
-            el = el.parentElement;
         }
 
-        el = inputEl;
-
-        for (let i = 0; i < 3 && el.parentElement; i++) {
-            el = el.parentElement;
-        }
-
-        return el;
+        return null;
     }
 
-    function styleDocked(btn) {
+    function findButtonSlot() {
+        const scanSection = findScanSection();
+
+        if (!scanSection) {
+            return null;
+        }
+
+        const placeholder = scanSection.previousElementSibling;
+
+        if (!placeholder) {
+            return null;
+        }
+
+        return placeholder.firstElementChild || placeholder;
+    }
+
+    function createPasteButton() {
+
+        // Prázdný placeholder div existuje jen v panelu "Vytvořit: Kontakt"
+        // (hned nad sekcí "Skenovat vizitku") - tlačítko se tak zobrazí jen tam.
+        const slot = findButtonSlot();
+
+        let btn = findOwnButton();
+
+        if (!slot) {
+            if (btn) {
+                btn.remove();
+            }
+
+            return;
+        }
+
+        if (btn) {
+            if (btn.parentElement !== slot) {
+                slot.appendChild(btn);
+            }
+
+            return;
+        }
+
+        btn = document.createElement('button');
+
+        btn.id = 'grit-contact-paste-btn';
+        btn.innerHTML = '📋 Vložit kontakt';
+
         Object.assign(btn.style, {
             display: 'block',
             width: '100%',
-            marginTop: '8px',
             boxSizing: 'border-box',
             padding: '10px 14px',
             background: '#0078d4',
@@ -385,40 +420,6 @@
             cursor: 'pointer',
             fontSize: '14px'
         });
-    }
-
-    function createPasteButton() {
-
-        // Pole Kraj existuje jen v panelu "Vytvořit: Kontakt" -
-        // tlačítko se tak zobrazí jen tam, jinde na stránce zmizí.
-        const krajInput = findField(CRM_FIELDS.region);
-
-        let btn = findOwnButton();
-
-        if (!krajInput) {
-            if (btn) {
-                btn.remove();
-            }
-
-            return;
-        }
-
-        const anchor = findFieldRow(krajInput);
-
-        if (btn) {
-            if (btn.previousElementSibling !== anchor) {
-                anchor.insertAdjacentElement('afterend', btn);
-            }
-
-            return;
-        }
-
-        btn = document.createElement('button');
-
-        btn.id = 'grit-contact-paste-btn';
-        btn.innerHTML = '🤖 Vložit kontakt';
-
-        styleDocked(btn);
 
         btn.addEventListener('click', async () => {
 
@@ -446,7 +447,7 @@
 
         console.log('grit-contact-paste-btn: vytvořeno');
 
-        anchor.insertAdjacentElement('afterend', btn);
+        slot.appendChild(btn);
     }
 
     createPasteButton();
