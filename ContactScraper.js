@@ -1,12 +1,19 @@
 // ==UserScript==
-// @name         Dynamics CRM Contact Autofill
+// @name         Dynamics Contact Form Asistent
 // @namespace    grit
-// @version      0.1
+// @version      1.0
 // @description  Ctrl+V => automatické vyplnění kontaktu
 // @author       HLM + GPT 5.6
-// @match https://grit.crm4.dynamics.com/*
+// @match        https://grit.crm4.dynamics.com/*
 // @grant        none
 // ==/UserScript==
+
+(function () {
+    'use strict';
+
+    console.log('TAMPERMONKEY OK');
+    alert('TAMPERMONKEY OK');
+})();
 
 (function () {
     'use strict';
@@ -41,7 +48,13 @@
         }
 
         el.focus();
-        el.value = value;
+
+        const nativeSetter = Object.getOwnPropertyDescriptor(
+            window.HTMLInputElement.prototype,
+            'value'
+        ).set;
+
+        nativeSetter.call(el, value);
 
         el.dispatchEvent(new InputEvent('input', {
             bubbles: true
@@ -268,7 +281,63 @@
         console.log(parsed);
 
         fillForm(parsed);
-    });
+    }, true);
+
+    function createPasteButton() {
+
+        if (document.getElementById('grit-contact-paste-btn')) {
+            return;
+        }
+
+        const btn = document.createElement('button');
+
+        btn.id = 'grit-contact-paste-btn';
+        btn.innerHTML = '📋 Vložit kontakt';
+
+        Object.assign(btn.style, {
+            position: 'fixed',
+            top: '120px',
+            right: '20px',
+            zIndex: '999999',
+            padding: '10px 14px',
+            background: '#0078d4',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            boxShadow: '0 2px 8px rgba(0,0,0,.3)'
+        });
+
+        btn.addEventListener('click', async () => {
+
+            try {
+                const text = await navigator.clipboard.readText();
+
+                if (!text) {
+                    alert('Ve schránce není text');
+                    return;
+                }
+
+                console.log('Clipboard text:', text);
+
+                const parsed = parseContact(text);
+
+                console.log(parsed);
+
+                fillForm(parsed);
+
+            } catch (err) {
+                console.error(err);
+                alert('Browser nedovolil přístup ke schránce');
+            }
+        });
+
+        document.body.appendChild(btn);
+    }
+
+    createPasteButton();
+
+    setInterval(createPasteButton, 1000);
 
 })();
-``
