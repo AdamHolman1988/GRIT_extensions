@@ -4,7 +4,7 @@
 // @version      0.1
 // @description  Ctrl+V => automatické vyplnění kontaktu
 // @author       HLM + GPT 5.6
-// @match        https://*.dynamics.com
+// @match        https://*.dynamics.com/*
 // @grant        none
 // ==/UserScript==
 
